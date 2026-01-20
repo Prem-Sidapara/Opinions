@@ -13,14 +13,16 @@ app.use(cors());
 app.use(express.json());
 
 // Database Connection
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-})
+mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log('MongoDB Connected'))
     .catch(err => console.error(err));
 
-// Routes (Placeholder)
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/opinions', require('./routes/opinionRoutes'));
+app.use('/api/comments', require('./routes/commentRoutes'));
+app.use('/api/topics', require('./routes/topicRoutes'));
+
 app.get('/', (req, res) => {
     res.send('Opinion Sharing API is running');
 });

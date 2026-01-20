@@ -22,3 +22,7 @@ yarn-error.log*
 *.njsproj
 *.sln
 *.sw?
+
+# Temporary Scripts
+server/test_api.js
+server/debug_env.js
