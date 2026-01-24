@@ -91,18 +91,58 @@ exports.sendOtp = async (req, res) => {
 
         // Send Email
         const mailOptions = {
-            from: process.env.EMAIL_USER || 'noreply@opinions.com',
+            from: `"Opinions Security" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: 'Your Login OTP',
-            text: `Your OTP is: ${otp}`
+            replyTo: process.env.EMAIL_USER,
+            sender: process.env.EMAIL_USER,
+            subject: 'Opinions Login Verification Code', // More distinct subject
+            text: `Your OTP is: ${otp}. It expires in 10 minutes.`,
+            html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <style>
+                    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 480px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaea; border-radius: 10px; }
+                    .header { text-align: center; margin-bottom: 24px; }
+                    .otp-box { background: #f9f9f9; border-radius: 6px; padding: 16px; text-align: center; margin: 24px 0; letter-spacing: 6px; font-size: 28px; font-weight: 700; border: 1px solid #ddd; }
+                    .footer { font-size: 12px; color: #888; text-align: center; margin-top: 32px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h2>Login Verification</h2>
+                    </div>
+                    <p>Hello,</p>
+                    <p>Please use the verification code below to sign in. This code is valid for 10 minutes.</p>
+                    
+                    <div class="otp-box">${otp}</div>
+
+                    <p>If you didn't request this, purely ignore this email.</p>
+                    
+                    <div class="footer">
+                        Sent securely by Opinions App
+                    </div>
+                </div>
+            </body>
+            </html>
+            `
         };
 
         if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-            await transporter.sendMail(mailOptions);
-            console.log(`OTP sent to ${email} via Gmail`);
+            try {
+                await transporter.sendMail(mailOptions);
+                console.log(`OTP sent via Gmail`);
+            } catch (emailErr) {
+                console.error("Email sending failed:", emailErr);
+                return res.status(500).json({ error: 'Failed to send OTP email' });
+            }
         } else {
-            console.warn('WARNING: No EMAIL_USER/PASS provided. OTP logged to console only.');
-            console.log(`[DEV MODE] OTP for ${email}: ${otp}`);
+            // If credentials are missing, we should probably fail or warn securely, but DEFINITELY DO NOT LOG OTP
+            console.error("Server Error: Missing Email Credentials for OTP");
+            return res.status(500).json({ error: 'Server configuration error: Email not set up' });
         }
 
         res.json({ message: 'OTP sent successfully' });
