@@ -1,15 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo-fix.png';
-import { Search, Menu, PenTool, User, LogOut } from 'lucide-react';
+import { Search, Menu, PenTool, User, LogOut, LayoutList, LayoutGrid, ChevronDown } from 'lucide-react';
 import CreateOpinionModal from './CreateOpinionModal';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState('blog'); // 'blog' or 'youtube'
+    const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        let timer;
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                timer = setTimeout(() => {
+                    setIsViewMenuOpen(false);
+                }, 300);
+            }
+            else {
+                clearTimeout(timer);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+            clearTimeout(timer);
+        };
+    }, []);
 
     const handleLogout = () => {
         logout();
@@ -34,9 +57,9 @@ const Navbar = () => {
                         </span>
                     </Link>
 
-                    {/* Center: Search Bar */}
-                    <div className="flex-1 max-w-xl px-4">
-                        <form onSubmit={handleSearch} className="relative flex items-center w-full">
+                    {/* Center: Search Bar & View Toggle */}
+                    <div className="flex-1 max-w-2xl px-4 flex items-center gap-2">
+                        <form onSubmit={handleSearch} className="relative flex items-center flex-1">
                             <input
                                 type="text"
                                 placeholder="Search for opinions..."
@@ -48,6 +71,37 @@ const Navbar = () => {
                                 <Search size={18} />
                             </button>
                         </form>
+
+                        {/* View Dropdown */}
+                        <div id='view-dropdown' className="relative" ref={dropdownRef}>
+                            <button
+                                onClick={() => setIsViewMenuOpen(!isViewMenuOpen)}
+                                className="flex items-center gap-1 bg-transparent px-3 py-2 text-white"
+                            >
+                                {viewMode === 'blog' ? <LayoutList size={18} /> : <LayoutGrid size={18} />}
+                                <ChevronDown size={16} id='view-dropdown-arrow' strokeWidth={3} className={`hover:text-[#FF6B35] transition-transform ${isViewMenuOpen ? 'rotate-180' : ''}`} />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {isViewMenuOpen && (
+                                <div className="absolute top-full left-0 mt-2 w-40 bg-[#313131] border border-[#333] rounded-xl shadow-xl overflow-hidden z-50 ">
+                                    <button
+                                        onClick={() => { setViewMode('blog'); setIsViewMenuOpen(false); }}
+                                        className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#202020] transition-colors ${viewMode === 'blog' ? 'text-[#FF6B35]' : 'text-white'}`}
+                                    >
+                                        <LayoutList size={16} />
+                                        <span>Blog Style</span>
+                                    </button>
+                                    <button
+                                        onClick={() => { setViewMode('youtube'); setIsViewMenuOpen(false); }}
+                                        className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#202020] transition-colors ${viewMode === 'youtube' ? 'text-[#FF6B35]' : 'text-white'}`}
+                                    >
+                                        <LayoutGrid size={16} />
+                                        <span>Youtube Style</span>
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Right: Actions */}

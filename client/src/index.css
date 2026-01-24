@@ -208,3 +208,8 @@
   pointer-events: none;
   z-index: -1;
 }
+
+
+#view-dropdown:hover #view-dropdown-arrow {
+  color: #FF6B35;
+}
