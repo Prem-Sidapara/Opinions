@@ -8,9 +8,19 @@ const UserSchema = new mongoose.Schema({
         match: [/^[a-zA-Z0-9._%+-]+@gmail\.com$/, 'Please use a valid @gmail.com address'],
         lowercase: true,
     },
-    password: {
+    // password: { type: String }, // Removed for OTP-only flow
+    otp: {
         type: String,
-        required: false, // Allow passwordless/OTP users
+        select: false // Do not return by default
+    },
+    otpExpires: {
+        type: Date,
+        select: false
+    },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true // Allow null/undefined values to be non-unique (though unique indexes handle partials differently, sparse is safer for optional unique fields)
     },
     username: {
         type: String,

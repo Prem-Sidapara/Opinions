@@ -35,3 +35,27 @@ exports.getComments = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
+
+exports.deleteComment = async (req, res) => {
+    try {
+        const comment = await Comment.findById(req.params.id);
+
+        if (!comment) {
+            return res.status(404).json({ msg: 'Comment not found' });
+        }
+
+        //Check if user is owner of the comment
+        if (comment.userId.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'User not authorized' });
+        }
+
+        await comment.deleteOne();
+        res.json({ msg: 'Comment removed' });
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Comment not found' });
+        }
+        res.status(500).send('Server Error');
+    }
+};
