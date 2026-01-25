@@ -4,7 +4,12 @@ const OpinionSchema = new mongoose.Schema({
     content: {
         type: String,
         required: true,
-        maxlength: 500,
+        maxlength: 2000, // Increased limit for detailed opinions
+    },
+    title: {
+        type: String,
+        required: true,
+        maxlength: 100,
     },
     topic: {
         type: String,

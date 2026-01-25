@@ -6,6 +6,7 @@ import './index.css';
 import Navbar from './components/Navbar';
 
 import Home from './pages/Home';
+import OpinionDetails from './pages/OpinionDetails';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Login />} />
+          <Route path="/opinion/:id" element={<OpinionDetails />} />
         </Routes>
       </div>
     </Router>

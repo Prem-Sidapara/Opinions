@@ -187,3 +187,14 @@ exports.verifyOtp = async (req, res) => {
         res.status(500).json({ error: 'OTP Verification failed' });
     }
 };
+
+// Get User
+exports.getUser = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+};

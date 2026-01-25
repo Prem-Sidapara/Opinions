@@ -1,13 +1,22 @@
 const Opinion = require('../models/Opinion');
 
+const Topic = require('../models/Topic');
+
 // Create a new opinion
 exports.createOpinion = async (req, res) => {
     try {
-        const { content, topic, isAnonymous } = req.body;
+        const { title, content, topic, isAnonymous } = req.body;
+
+        // Ensure topic exists in Topic collection
+        const existingTopic = await Topic.findOne({ name: { $regex: new RegExp(`^${topic}$`, 'i') } });
+        if (!existingTopic) {
+            await new Topic({ name: topic, description: `Opinions about ${topic}` }).save();
+        }
 
         const newOpinion = new Opinion({
+            title,
             content,
-            topic,
+            topic, // We still save the string in Opinion for now, can be populated later if schema changes
             userId: req.user.id, // Assuming middleware adds user to req
             isAnonymous: isAnonymous || false,
             ip: req.ip // simplified IP capture
@@ -34,7 +43,9 @@ exports.getOpinions = async (req, res) => {
         const opinions = await Opinion.find(filter)
             .sort(sortOption)
             .limit(20)
-            .populate('userId', 'username'); // Populate username
+            .limit(20)
+            .populate('userId', 'username')
+            .populate('commentsCount');
 
         // If anonymous, we need to hide the user info in the response logic, 
         // OR we can do it in the frontend. 
@@ -55,7 +66,9 @@ exports.getOpinions = async (req, res) => {
 
 exports.getOpinionById = async (req, res) => {
     try {
-        const opinion = await Opinion.findById(req.params.id).populate('userId', 'username');
+        const opinion = await Opinion.findById(req.params.id)
+            .populate('userId', 'username')
+            .populate('commentsCount');
         if (!opinion) return res.status(404).json({ message: 'Opinion not found' });
 
         // Increment views

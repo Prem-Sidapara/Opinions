@@ -144,6 +144,12 @@
     color: var(--text-muted);
   }
 
+  /* Fix for select options in dark mode */
+  .input option {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
   /* Glassmorphism Card */
   .glass-card {
     background: var(--glass-bg);
