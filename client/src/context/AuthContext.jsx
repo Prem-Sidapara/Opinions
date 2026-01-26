@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -14,12 +14,11 @@ export const AuthProvider = ({ children }) => {
             const token = localStorage.getItem('token');
             if (token) {
                 try {
-                    axios.defaults.headers.common['x-auth-token'] = token;
-                    const res = await axios.get('/api/auth/user');
+                    // Token is handled by api interceptor
+                    const res = await api.get('/auth/user');
                     setUser(res.data);
                 } catch (err) {
                     localStorage.removeItem('token');
-                    delete axios.defaults.headers.common['x-auth-token'];
                     setUser(null);
                 }
             }
@@ -30,22 +29,19 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const loginWithOtp = async (email, otp) => {
-        const res = await axios.post('/api/auth/otp/verify', { email, otp });
+        const res = await api.post('/auth/otp/verify', { email, otp });
         localStorage.setItem('token', res.data.token);
-        axios.defaults.headers.common['x-auth-token'] = res.data.token;
         setUser(res.data.user);
     };
 
     const googleLogin = async (credentialResponse) => {
-        const res = await axios.post('/api/auth/google', { googleToken: credentialResponse.credential });
+        const res = await api.post('/auth/google', { googleToken: credentialResponse.credential });
         localStorage.setItem('token', res.data.token);
-        axios.defaults.headers.common['x-auth-token'] = res.data.token;
         setUser(res.data.user);
     };
 
     const logout = () => {
         localStorage.removeItem('token');
-        delete axios.defaults.headers.common['x-auth-token'];
         setUser(null);
     };
 

@@ -1,8 +1,16 @@
 import axios from 'axios';
 
 // Use relative path by default to leverage proxies (Vite in dev, Vercel in prod)
-// Only use VITE_API_URL if explicitly set and we want to bypass proxy (rare)
-const baseURL = import.meta.env.VITE_API_URL || '/api';
+// Only use VITE_API_URL if explicitly set.
+let baseURL = import.meta.env.VITE_API_URL || '/api';
+
+// Ensure baseURL ends with /api if it doesn't already
+if (!baseURL.endsWith('/api')) {
+    baseURL += '/api';
+}
+
+// Fix double slashes if any (e.g., example.com//api)
+baseURL = baseURL.replace(/([^:]\/)\/+/g, "$1");
 
 console.log("API Base URL:", baseURL);
 

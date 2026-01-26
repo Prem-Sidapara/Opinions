@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
-import axios from 'axios';
+import api from '../utils/api';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -20,7 +20,7 @@ const Login = () => {
         setLoading(true);
         setError('');
         try {
-            await axios.post('/api/auth/otp/send', { email });
+            await api.post('/auth/otp/send', { email });
             setStep('OTP');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to send OTP');
