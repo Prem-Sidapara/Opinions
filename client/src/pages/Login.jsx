@@ -50,7 +50,7 @@ const Login = () => {
                     <h1 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '0.5rem' }}>
                         {step === 'EMAIL'
                             ? (isRegister ? 'Join Opinions' : 'Welcome Back')
-                            : 'Verify Access'}
+                            : 'Verify Access (Debug Mode)'}
                     </h1>
                     <p style={{ color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                         {step === 'EMAIL'
@@ -155,7 +155,17 @@ const Login = () => {
                                 await googleLogin(credentialResponse);
                                 navigate('/');
                             } catch (err) {
-                                setError('Google Login Failed. Please try again.');
+                                console.error("Login Error: ", err);
+                                // Construct a detailed debug message
+                                let debugMsg = "Debug Info: ";
+                                if (err.response) {
+                                    debugMsg += `Status: ${err.response.status}, Data: ${JSON.stringify(err.response.data)}`;
+                                } else if (err.request) {
+                                    debugMsg += "No response received (Network Error?)";
+                                } else {
+                                    debugMsg += err.message;
+                                }
+                                setError(debugMsg);
                             } finally {
                                 setLoading(false);
                             }

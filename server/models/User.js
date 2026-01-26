@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true,
-        match: [/^[a-zA-Z0-9._%+-]+@gmail\.com$/, 'Please use a valid @gmail.com address'],
+        // match: [/^[a-zA-Z0-9._%+-]+@gmail\.com$/, 'Please use a valid @gmail.com address'], // Relaxed validation
         lowercase: true,
     },
     // password: { type: String }, // Removed for OTP-only flow
