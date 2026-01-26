@@ -1,7 +1,7 @@
 import React from 'react';
 import { MessageSquare, Heart } from 'lucide-react';
 
-const OpinionCard = ({ item, onClick }) => {
+const OpinionCard = ({ item, onClick, expanded = false }) => {
     return (
         <div
             onClick={onClick}
@@ -53,12 +53,15 @@ const OpinionCard = ({ item, onClick }) => {
                 <p style={{
                     fontSize: '0.95rem',
                     color: 'var(--text-secondary)',
-                    lineHeight: '1.5',
+                    lineHeight: '1.6',
                     marginBottom: '1.5rem',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
+                    display: expanded ? 'block' : '-webkit-box',
+                    WebkitLineClamp: expanded ? 'none' : 3,
                     WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden'
+                    overflow: expanded ? 'visible' : 'hidden',
+                    wordBreak: 'break-word',
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'pre-wrap'
                 }}>
                     {item.content}
                 </p>

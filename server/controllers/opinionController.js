@@ -32,9 +32,16 @@ exports.createOpinion = async (req, res) => {
 // Get all opinions (with filters/sorting)
 exports.getOpinions = async (req, res) => {
     try {
-        const { topic, sort, cursor } = req.query; // cursor pagination could be added later
+        const { topic, sort, cursor, search } = req.query; // cursor pagination could be added later
         const filter = {};
         if (topic) filter.topic = topic;
+        if (req.query.userId) filter.userId = req.query.userId;
+        if (search) {
+            filter.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { content: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         let sortOption = { createdAt: -1 }; // Default: Latest
         if (sort === 'popular') sortOption = { views: -1 };
@@ -42,7 +49,6 @@ exports.getOpinions = async (req, res) => {
 
         const opinions = await Opinion.find(filter)
             .sort(sortOption)
-            .limit(20)
             .limit(20)
             .populate('userId', 'username')
             .populate('commentsCount');

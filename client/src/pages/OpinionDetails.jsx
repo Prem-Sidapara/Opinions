@@ -51,7 +51,7 @@ const OpinionDetails = () => {
                 Back to Feed
             </button>
 
-            <OpinionCard item={opinion} onClick={null} />
+            <OpinionCard item={opinion} onClick={null} expanded={true} />
 
             <CommentSection
                 opinionId={id}
