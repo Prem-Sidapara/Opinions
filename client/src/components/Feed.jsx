@@ -24,7 +24,13 @@ const Feed = () => {
                 if (topic) params.topic = topic;
 
                 const res = await api.get('/opinions', { params });
-                setItems(res.data);
+
+                if (Array.isArray(res.data)) {
+                    setItems(res.data);
+                } else {
+                    console.error("Unexpected API response format:", res.data);
+                    setError("Received invalid data from server.");
+                }
                 setLoading(false);
             } catch (err) {
                 console.error("Error fetching opinions:", err);
@@ -64,11 +70,7 @@ const Feed = () => {
                 </h1>
             </div>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '1.5rem'
-            }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {items.map((item) => (
                     <OpinionCard
                         key={item._id}

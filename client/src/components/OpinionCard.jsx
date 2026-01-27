@@ -5,9 +5,8 @@ const OpinionCard = ({ item, onClick, expanded = false }) => {
     return (
         <div
             onClick={onClick}
-            className="card"
+            className="card p-4 md:p-6"
             style={{
-                padding: '1.5rem',
                 cursor: onClick ? 'pointer' : 'default',
                 background: '#0e1013',
                 border: '1px solid var(--border)',

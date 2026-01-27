@@ -15,9 +15,12 @@ export const AuthProvider = ({ children }) => {
             if (token) {
                 try {
                     // Token is handled by api interceptor
+                    console.log("Verifying token with /auth/user...");
                     const res = await api.get('/auth/user');
+                    console.log("User verified:", res.data);
                     setUser(res.data);
                 } catch (err) {
+                    console.error("Auth check failed:", err.response?.status, err.message);
                     localStorage.removeItem('token');
                     setUser(null);
                 }
