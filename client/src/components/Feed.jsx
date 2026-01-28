@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MessageSquare, Heart, Share2 } from 'lucide-react';
 import OpinionCard from './OpinionCard';
+import OpinionSkeleton from './OpinionSkeleton';
 import api from '../utils/api';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -15,6 +16,21 @@ const Feed = () => {
     const topic = searchParams.get('topic');
     const viewMode = searchParams.get('view') || 'blog'; // Default to blog/list
 
+    // Track locally added items to prevent overwrite by slow fetches
+    const localItemsRef = React.useRef([]);
+
+    useEffect(() => {
+        const handleNewOpinion = (e) => {
+            const newOpinion = e.detail;
+            const enhancedOpinion = { ...newOpinion, isLocal: true }; // Mark as local for debug/handling if needed
+            localItemsRef.current = [enhancedOpinion, ...localItemsRef.current];
+            setItems(prev => [enhancedOpinion, ...prev]);
+        };
+
+        window.addEventListener('opinion-created', handleNewOpinion);
+        return () => window.removeEventListener('opinion-created', handleNewOpinion);
+    }, []);
+
     useEffect(() => {
         const fetchOpinions = async () => {
             setLoading(true); // Reset loading on params change
@@ -26,7 +42,24 @@ const Feed = () => {
                 const res = await api.get('/opinions', { params });
 
                 if (Array.isArray(res.data)) {
-                    setItems(res.data);
+                    // Merge strategy: Server items + Local items that are NOT in server items (by id)
+                    // Actually, simpler: If we have local items, we want to keep them at the top until we refresh/reload or they come from server.
+                    // But if fetch finishes AFTER local add, we want to ensure we don't lose the local add.
+
+                    const serverItems = res.data;
+                    const localItems = localItemsRef.current;
+
+                    // Filter out any local items that are now present in server response (to avoid duplication if re-fetching)
+                    const serverIds = new Set(serverItems.map(i => i._id));
+                    const uniqueLocalItems = localItems.filter(i => !serverIds.has(i._id));
+
+                    // Combine: Local (newest) + Server
+                    // Note: This assumes local items are always newer than what server just sent.
+                    setItems([...uniqueLocalItems, ...serverItems]);
+
+                    // Update ref to only keep truly unique local ones ensuring we don't hold them forever if they are on server
+                    // Actually, once they are on server, we can clear them from "local unique" tracking?
+                    // Safe bet: keep them until component unmount or next hard refresh
                 } else {
                     console.error("Unexpected API response format:", res.data);
                     setError("Received invalid data from server.");
@@ -46,10 +79,8 @@ const Feed = () => {
         navigate(`/opinion/${id}`);
     };
 
-    if (loading) return <div className="text-white text-center mt-10">Loading opinions...</div>;
     // We might want to show error but also allow retry or show empty state if search yields nothing
     if (error) return <div className="text-red-500 text-center mt-10">{error}</div>;
-    if (items.length === 0) return <div className="text-gray-500 text-center mt-10">No opinions found.</div>;
 
     // Grid View (YouTube Style)
     if (viewMode === 'youtube') {
@@ -71,13 +102,22 @@ const Feed = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {items.map((item) => (
-                    <OpinionCard
-                        key={item._id}
-                        item={item}
-                        onClick={() => handleOpinionClick(item._id)}
-                    />
-                ))}
+                {loading ? (
+                    // Show 4 skeletons while loading
+                    [...Array(4)].map((_, i) => <OpinionSkeleton key={i} />)
+                ) : items.length === 0 ? (
+                    <div className="col-span-full text-center py-10">
+                        <p className="text-gray-500 text-lg">No opinions found.</p>
+                    </div>
+                ) : (
+                    items.map((item) => (
+                        <OpinionCard
+                            key={item._id}
+                            item={item}
+                            onClick={() => handleOpinionClick(item._id)}
+                        />
+                    ))
+                )}
             </div>
         </div>
     );

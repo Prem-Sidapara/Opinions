@@ -7,7 +7,7 @@ import CreateOpinionModal from './CreateOpinionModal';
 import api from '../utils/api';
 
 const Navbar = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, loading } = useAuth();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -186,7 +186,9 @@ const Navbar = () => {
 
                     {/* Right: Actions */}
                     <div className="flex gap-2 min-w-0 md:gap-3 items-center shrink-0">
-                        {user ? (
+                        {loading ? (
+                            <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse"></div> // Skeleton
+                        ) : user ? (
                             <>
                                 <div className="flex items-center gap-3 pl-2 md:pl-4 md:ml-2 md:border-l border-[#333]">
                                     <Link to="/profile" className="text-white hover:text-[#FF6B35] transition-colors" title="Profile">
@@ -285,7 +287,7 @@ const Navbar = () => {
                 </div>
             </div>
 
-            <CreateOpinionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+            {isModalOpen && <CreateOpinionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />}
         </>
     );
 };

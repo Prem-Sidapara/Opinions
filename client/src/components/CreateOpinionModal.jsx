@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const CreateOpinionModal = ({ isOpen, onClose }) => {
-    if (!isOpen) return null;
+    // Parent handles conditional rendering, but for safety/animations we keep the component structure.
+    // Hooks must be called unconditionally.
+    const { user } = useAuth(); // Get current user for optimistic update
 
     const [isAnonymous, setIsAnonymous] = useState(false);
     const [title, setTitle] = useState(''); // Added missing state
@@ -39,8 +42,29 @@ const CreateOpinionModal = ({ isOpen, onClose }) => {
                 topic: finalCategory,
                 isAnonymous
             });
+            // Dispatch event for Feed to update
+            const serverData = res.data;
+
+            // Hydrate optimistic data: Ensure userId is an object with username if not anonymous
+            // Server might return just the ID, so we manually populate it for the requested immediate UI update.
+            let optimisticOpinion = { ...serverData };
+
+            if (!isAnonymous && user) {
+                // If server returned just an ID string or nothing for userId, fill it
+                if (!optimisticOpinion.userId || typeof optimisticOpinion.userId === 'string') {
+                    optimisticOpinion.userId = {
+                        _id: user._id,
+                        username: user.username,
+                        name: user.name, // In case it's used elsewhere
+                        avatar: user.avatar // In case it's used elsewhere
+                    };
+                }
+            } else if (isAnonymous) {
+                optimisticOpinion.userId = null;
+            }
+
+            window.dispatchEvent(new CustomEvent('opinion-created', { detail: optimisticOpinion }));
             onClose();
-            window.location.reload(); // Simple reload to refresh feed for now
         } catch (err) {
             console.error("Error creating opinion:", err);
         } finally {
