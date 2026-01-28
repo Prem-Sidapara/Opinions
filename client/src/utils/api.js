@@ -2,7 +2,9 @@ import axios from 'axios';
 
 // Use relative path by default to leverage proxies (Vite in dev, Vercel in prod)
 // Only use VITE_API_URL if explicitly set.
-let baseURL = import.meta.env.VITE_API_URL || '/api';
+// Use direct URL to avoid Vercel Proxy cold starts
+// Fallback to local if needed, but prefer direct Render URL for production
+let baseURL = import.meta.env.VITE_API_URL || 'https://opinions-13hc.onrender.com/api';
 
 // Ensure baseURL ends with /api if it doesn't already
 if (!baseURL.endsWith('/api')) {
