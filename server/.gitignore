@@ -33,4 +33,6 @@ Desktop.ini
 coverage/
 
 # Tools
-.npm
+
+# Scripts
+scripts/seed_production.js

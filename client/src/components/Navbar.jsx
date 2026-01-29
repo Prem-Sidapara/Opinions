@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo-fix.png';
-import { Search, Menu, PenTool, User, LogOut, LayoutList, LayoutGrid, ChevronDown } from 'lucide-react';
+import { Search, Menu, PenTool, User, LogOut, ChevronDown } from 'lucide-react';
 import CreateOpinionModal from './CreateOpinionModal';
 import api from '../utils/api';
 
@@ -13,37 +13,15 @@ const Navbar = () => {
 
     // Initialize state from URL
     const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
-    const [viewMode, setViewMode] = useState(searchParams.get('view') || 'blog');
 
-    const [isViewMenuOpen, setIsViewMenuOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const dropdownRef = useRef(null);
 
     // Sync state with URL changes (e.g. back button)
     useEffect(() => {
         setSearchQuery(searchParams.get('search') || '');
-        setViewMode(searchParams.get('view') || 'blog');
     }, [searchParams]);
 
-    useEffect(() => {
-        let timer;
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                timer = setTimeout(() => {
-                    setIsViewMenuOpen(false);
-                }, 300);
-            }
-            else {
-                clearTimeout(timer);
-            }
-        };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-            clearTimeout(timer);
-        };
-    }, []);
 
     const handleLogout = () => {
         logout();
@@ -64,16 +42,7 @@ const Navbar = () => {
         navigate(`/?${params.toString()}`);
     };
 
-    const updateViewMode = (mode) => {
-        setViewMode(mode);
-        const params = new URLSearchParams(searchParams);
-        params.set('view', mode);
-        setSearchParams(params);
-        setIsViewMenuOpen(false);
-        if (window.location.pathname !== '/') {
-            navigate(`/?${params.toString()}`);
-        }
-    };
+
 
     const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
     const [topics, setTopics] = useState([]);
@@ -127,7 +96,7 @@ const Navbar = () => {
 
     return (
         <>
-            <nav className="sticky top-0 z-50 bg-[#202020] h-[60px] flex-none">
+            <nav className="sticky top-0 z-50 bg-[#000000] h-[60px] flex-none">
                 <div className="container h-full flex items-center justify-between gap-2 md:gap-4">
                     {/* Left: Logo */}
                     <Link to="/" className="flex items-center gap-1 shrink-0">
@@ -138,7 +107,7 @@ const Navbar = () => {
                     </Link>
 
                     {/* Center: Search Bar & View Toggle */}
-                    <div className="flex-1 max-w-2xl px-2 md:px-4 flex items-center gap-2">
+                    <div className="flex-1 max-w-4xl px-2 md:px-4 flex items-center gap-2">
                         <form onSubmit={handleSearch} className="relative flex items-center flex-1">
                             <input
                                 type="text"
@@ -152,36 +121,7 @@ const Navbar = () => {
                             </button>
                         </form>
 
-                        {/* View Dropdown - Hidden on very small screens if needed, or kept compact */}
-                        <div id='view-dropdown' className="relative hidden md:block" ref={dropdownRef}>
-                            <button
-                                onClick={() => setIsViewMenuOpen(!isViewMenuOpen)}
-                                className="flex items-center gap-1 bg-transparent px-3 py-2 text-white"
-                            >
-                                {viewMode === 'blog' ? <LayoutList size={18} /> : <LayoutGrid size={18} />}
-                                <ChevronDown size={16} id='view-dropdown-arrow' strokeWidth={3} className={`hover:text-[#FF6B35] transition-transform ${isViewMenuOpen ? 'rotate-180' : ''}`} />
-                            </button>
 
-                            {/* Dropdown Menu */}
-                            {isViewMenuOpen && (
-                                <div className="absolute top-full left-0 mt-2 w-40 bg-[#313131] border border-[#333] rounded-xl shadow-xl overflow-hidden z-50 ">
-                                    <button
-                                        onClick={() => updateViewMode('blog')}
-                                        className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#202020] transition-colors ${viewMode === 'blog' ? 'text-[#FF6B35]' : 'text-white'}`}
-                                    >
-                                        <LayoutList size={16} />
-                                        <span>Blog Style</span>
-                                    </button>
-                                    <button
-                                        onClick={() => updateViewMode('youtube')}
-                                        className={`w-full flex items-center gap-2 px-4 py-2 text-sm hover:bg-[#202020] transition-colors ${viewMode === 'youtube' ? 'text-[#FF6B35]' : 'text-white'}`}
-                                    >
-                                        <LayoutGrid size={16} />
-                                        <span>Youtube Style</span>
-                                    </button>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* Right: Actions */}

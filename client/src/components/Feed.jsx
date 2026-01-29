@@ -14,7 +14,7 @@ const Feed = () => {
 
     const search = searchParams.get('search');
     const topic = searchParams.get('topic');
-    const viewMode = searchParams.get('view') || 'blog'; // Default to blog/list
+
 
     // Track locally added items to prevent overwrite by slow fetches
     const localItemsRef = React.useRef([]);
@@ -82,17 +82,8 @@ const Feed = () => {
     // We might want to show error but also allow retry or show empty state if search yields nothing
     if (error) return <div className="text-red-500 text-center mt-10">{error}</div>;
 
-    // Grid View (YouTube Style)
-    if (viewMode === 'youtube') {
-        return (
-            <div className="flex-1 flex flex-col items-center justify-center min-h-[50vh]">
-                <h2 className="text-2xl font-bold text-[#FF6B35] mb-2">Coming Soon</h2>
-                <p className="text-gray-400">The Youtube Layout is currently under development.</p>
-            </div>
-        );
-    }
 
-    // Blog View (List Style) - Default
+
     return (
         <div className="container flex-1 w-full" style={{ paddingBottom: '2.5rem' }}>
             <div className="flex items-center justify-between mb-6">
