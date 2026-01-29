@@ -59,7 +59,8 @@ const Navbar = () => {
     // Fetch topics function
     const fetchTopics = async () => {
         try {
-            const res = await api.get('/topics');
+            // Add timestamp to prevent caching
+            const res = await api.get(`/topics?t=${Date.now()}`);
             // Deduplicate topics
             const uniqueTopics = Array.from(new Map(res.data.map(item => [item.name, item])).values());
             setTopics(uniqueTopics);
