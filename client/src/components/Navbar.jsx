@@ -60,9 +60,13 @@ const Navbar = () => {
     const fetchTopics = async () => {
         try {
             // Add timestamp to prevent caching
+            console.log("Fetching topics...");
             const res = await api.get(`/topics?t=${Date.now()}`);
+            console.log("API Response:", res.data);
+
             // Deduplicate topics
             const uniqueTopics = Array.from(new Map(res.data.map(item => [item.name, item])).values());
+            console.log("Unique Topics to Set:", uniqueTopics);
             setTopics(uniqueTopics);
         } catch (err) {
             console.error("Failed to fetch topics", err);
