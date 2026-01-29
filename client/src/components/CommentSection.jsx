@@ -1,287 +1,183 @@
-import React, { useState, useRef, useEffect } from 'react';
-import api from '../utils/api';
-import { User, CheckSquare, Square, Send, MessageCircle } from 'lucide-react';
-import { timeAgo } from '../utils/dateUtils';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { Send, MessageSquare } from 'lucide-react';
+import CommentItem from './CommentItem';
 
-// Extracted CommentItem to prevent re-mounting on state changes
-const CommentItem = ({
-    comment,
-    depth = 0,
-    replyingTo,
-    setReplyingTo,
-    replyContent,
-    setReplyContent,
-    isReplyAnonymous,
-    setIsReplyAnonymous,
-    handlePost,
-    loading
-}) => {
-    const isReplying = replyingTo === comment._id;
-    const replyInputRef = useRef(null);
-
-    // Auto-resize reply input
-    useEffect(() => {
-        if (isReplying && replyInputRef.current) {
-            replyInputRef.current.style.height = 'auto';
-            replyInputRef.current.style.height = replyInputRef.current.scrollHeight + 'px';
-            replyInputRef.current.focus();
-        }
-    }, [replyContent, isReplying]);
-
-    return (
-        <div className={`flex flex-col ${depth > 0 ? 'ml-12 mt-4' : 'mb-6 border-b border-[rgba(255,255,255,0.05)] pb-6 last:border-0'}`}>
-            <div className="flex gap-4 group">
-                {/* Avatar */}
-                <div className="w-8 h-8 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center flex-shrink-0 border border-[var(--border)] group-hover:border-[var(--text-secondary)] transition-colors">
-                    {!comment.userId ? (
-                        <User size={16} className="text-[var(--text-secondary)] opacity-50" />
-                    ) : (
-                        <span className="font-bold text-xs text-[var(--text-primary)]">
-                            {(comment.userId.username || 'U')[0].toUpperCase()}
-                        </span>
-                    )}
-                </div>
-
-                <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-medium text-white">
-                            {!comment.userId ? 'Anonymous' : '@' + (comment.userId.username || 'user')}
-                        </span>
-                        <span className="text-xs text-[var(--text-secondary)]">•</span>
-                        <span className="text-xs text-[var(--text-secondary)]">
-                            {timeAgo(comment.createdAt)}
-                        </span>
-                    </div>
-
-                    <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-2">{comment.content}</p>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => setReplyingTo(replyingTo === comment._id ? null : comment._id)}
-                            className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-white transition-colors uppercase tracking-wide"
-                        >
-                            <MessageCircle size={14} /> Reply
-                        </button>
-                    </div>
-
-                    {/* Reply Input */}
-                    {isReplying && (
-                        <form onSubmit={(e) => handlePost(e, replyContent, comment._id, isReplyAnonymous)} className="mt-4 mb-4 animate-fade-in pl-4 border-l-2 border-[var(--border)]">
-                            <div className="relative border-b border-[var(--border)] focus-within:border-white transition-colors">
-                                <textarea
-                                    ref={replyInputRef}
-                                    value={replyContent}
-                                    onChange={(e) => setReplyContent(e.target.value)}
-                                    placeholder={`Reply to ${!comment.userId ? 'Anonymous' : '@' + (comment.userId.username || 'user')}...`}
-                                    className="w-full bg-transparent text-white placeholder-[var(--text-muted)] focus:outline-none resize-none py-2 text-sm"
-                                    style={{ minHeight: '32px', maxHeight: '150px' }}
-                                    rows={1}
-                                />
-                            </div>
-                            <div className="flex justify-end items-center mt-2 gap-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsReplyAnonymous(!isReplyAnonymous)}
-                                    className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
-                                >
-                                    {isReplyAnonymous ? <CheckSquare size={14} className="text-[var(--accent)]" /> : <Square size={14} />}
-                                    <span>Anonymous</span>
-                                </button>
-
-                                <div className="flex gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => setReplyingTo(null)}
-                                        className="text-xs font-bold text-[var(--text-secondary)] hover:text-white"
-                                    >
-                                        CANCEL
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={loading || !replyContent.trim()}
-                                        className="px-4 py-1.5 rounded-full bg-[#3ea6ff] text-black font-bold text-xs hover:bg-[#65b8ff] disabled:opacity-50"
-                                    >
-                                        REPLY
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    )}
-                </div>
-            </div>
-
-            {/* Nested Replies */}
-            {comment.replies && comment.replies.length > 0 && (
-                <div className="flex flex-col">
-                    {comment.replies.map(reply => (
-                        <CommentItem
-                            key={reply._id}
-                            comment={reply}
-                            depth={depth + 1}
-                            replyingTo={replyingTo}
-                            setReplyingTo={setReplyingTo}
-                            replyContent={replyContent}
-                            setReplyContent={setReplyContent}
-                            isReplyAnonymous={isReplyAnonymous}
-                            setIsReplyAnonymous={setIsReplyAnonymous}
-                            handlePost={handlePost}
-                            loading={loading}
-                        />
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-};
-
-const CommentSection = ({ opinionId, comments, setComments }) => {
+const CommentSection = ({ opinionId }) => {
+    const { user, token } = useAuth();
+    const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
-    const [replyingTo, setReplyingTo] = useState(null); // ID of comment being replied to
-    const [replyContent, setReplyContent] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isAnonymous, setIsAnonymous] = useState(false);
-    const [isReplyAnonymous, setIsReplyAnonymous] = useState(false);
+    const [error, setError] = useState('');
 
-    // Refs for auto-sizing inputs
-    const mainInputRef = useRef(null);
-
-    // Auto-resize main input
     useEffect(() => {
-        if (mainInputRef.current) {
-            mainInputRef.current.style.height = 'auto';
-            mainInputRef.current.style.height = mainInputRef.current.scrollHeight + 'px';
-        }
-    }, [newComment]);
+        fetchComments();
+    }, [opinionId]);
 
-    const handlePost = async (e, content, parentId = null, anonymous = false) => {
-        e.preventDefault();
-        if (!content.trim()) return;
-
-        setLoading(true);
+    const fetchComments = async () => {
         try {
-            await api.post('/comments', {
-                content: content,
-                opinionId,
-                parentId,
-                isAnonymous: anonymous
-            });
-
-            const commentsRes = await api.get(`/comments/${opinionId}`);
-            setComments(commentsRes.data);
-
-            if (parentId) {
-                setReplyingTo(null);
-                setReplyContent('');
-                setIsReplyAnonymous(false);
-            } else {
-                setNewComment('');
-                if (mainInputRef.current) mainInputRef.current.style.height = 'auto';
-                setIsAnonymous(false);
-            }
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/comments/${opinionId}`);
+            setComments(structureComments(res.data));
+            setLoading(false);
         } catch (err) {
-            console.error("Error posting comment:", err);
-        } finally {
+            console.error(err);
             setLoading(false);
         }
     };
 
-    // Helper to organize comments into a tree
-    const buildCommentTree = (comments) => {
+    // Transform flat list to tree
+    const structureComments = (flatComments) => {
         const commentMap = {};
         const roots = [];
 
-        // Deep copy comments to avoid mutating props or state in place if it causes issues, 
-        // though map returns new dictionary. But the objects themselves are references.
-        // Better to create shallow copies.
-        const commentsCopy = comments.map(c => ({ ...c, replies: [] }));
-
-        commentsCopy.forEach(comment => {
-            commentMap[comment._id] = comment;
+        // First pass: create map and initialize replies array
+        flatComments.forEach(c => {
+            commentMap[c._id] = { ...c, replies: [] };
         });
 
-        commentsCopy.forEach(comment => {
-            if (comment.parentId) {
-                if (commentMap[comment.parentId]) {
-                    commentMap[comment.parentId].replies.push(comment);
+        // Second pass: link children to parents
+        flatComments.forEach(c => {
+            if (c.parentId) {
+                if (commentMap[c.parentId]) {
+                    commentMap[c.parentId].replies.push(commentMap[c._id]);
+                } else {
+                    // Parent might be missing or deleted, treat as root or orphan (here root logic safer)
+                    // But if our logic is strictly Top->Reply->Reply, orphans shouldn't happen ideally
+                    // Fallback to root if parent missing
+                    roots.push(commentMap[c._id]);
                 }
             } else {
-                roots.push(comment);
+                roots.push(commentMap[c._id]);
             }
         });
 
         return roots;
     };
 
-    const rootComments = buildCommentTree(comments);
+    const getAvatarColor = (id) => {
+        // Simple hash to color
+        let hash = 0;
+        for (let i = 0; i < id.length; i++) {
+            hash = id.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const c = (hash & 0x00FFFFFF).toString(16).toUpperCase();
+        return '#' + '00000'.substring(0, 6 - c.length) + c;
+    };
+
+    const handleAddComment = async (e) => {
+        e.preventDefault();
+        if (!newComment.trim()) return;
+
+        try {
+            const res = await axios.post(
+                `${import.meta.env.VITE_API_URL}/api/comments`,
+                { content: newComment, opinionId, isAnonymous },
+                { headers: { 'x-auth-token': token } }
+            );
+
+            // Re-fetch to accept simple linear insert and then sort
+            // Or manually append. Re-fetch is safer for consistency.
+            fetchComments();
+            setNewComment('');
+        } catch (err) {
+            setError(err.response?.data?.msg || 'Error posting comment');
+        }
+    };
+
+    const handleReply = async (parentId, content) => {
+        try {
+            await axios.post(
+                `${import.meta.env.VITE_API_URL}/api/comments`,
+                { content, opinionId, parentId, isAnonymous }, // User choice for anon persists in replies? Or prompt? Assuming user pref stays or defaults to public. 
+                // Let's assume replies inherit the current user's anonymous toggle state at the top creates confusion. 
+                // For simplicity, replies use the SAME isAnonymous toggle state as the main input for now, 
+                // OR we should let them choose.
+                // Best UX: Reply usually mimics the main state unless specified. 
+                // We'll use the main `isAnonymous` state for replies too for now.
+                { headers: { 'x-auth-token': token } }
+            );
+            fetchComments();
+        } catch (err) {
+            alert(err.response?.data?.msg || 'Error replying');
+        }
+    };
 
     return (
-        <div className="mt-8">
-            <h3 className="text-xl font-bold mb-6 text-white flex items-center gap-2">
-                {comments.length} Comments
+        <div className="bg-[#0e1013] rounded-2xl p-4 md:p-6 shadow-sm border border-[var(--border)] mt-6 max-w-full overflow-hidden text-white">
+            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                <MessageSquare size={20} className="text-blue-500" />
+                Comments
             </h3>
 
-            {/* Main Input - YouTube Style */}
-            <form onSubmit={(e) => handlePost(e, newComment, null, isAnonymous)} className="mb-10 flex gap-4">
-                <div className="w-10 h-10 rounded-full bg-[var(--bg-tertiary)] flex items-center justify-center flex-shrink-0 border border-[var(--border)]">
-                    <User size={20} className="text-[var(--text-secondary)]" />
-                </div>
-
-                <div className="flex-1">
-                    <div className="relative border-b border-[var(--border)] focus-within:border-white transition-colors">
-                        <textarea
-                            ref={mainInputRef}
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Add a comment..."
-                            className="w-full bg-transparent text-white placeholder-[var(--text-muted)] focus:outline-none resize-none py-2"
-                            style={{ minHeight: '32px', maxHeight: '200px' }}
-                            rows={1}
-                        />
+            {/* Add Comment Input */}
+            {user ? (
+                <div className="mb-8 flex gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${isAnonymous ? 'bg-gray-700 text-white' : 'bg-blue-600 text-white'}`}>
+                        {user.username ? user.username.charAt(0).toUpperCase() : 'U'}
                     </div>
-
-                    <div className={`flex items-center justify-end gap-4 mt-3 ${!newComment && 'hidden'}`}>
-                        <button
-                            type="button"
-                            onClick={() => setIsAnonymous(!isAnonymous)}
-                            className="flex items-center gap-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
-                        >
-                            {isAnonymous ? <CheckSquare size={18} className="text-[var(--accent)]" /> : <Square size={18} />}
-                            <span>Anonymous</span>
-                        </button>
-
-                        <button
-                            type="submit"
-                            disabled={loading || !newComment.trim()}
-                            className="px-4 py-2 rounded-full bg-[#3ea6ff] text-black font-bold text-sm hover:bg-[#65b8ff] disabled:opacity-50"
-                        >
-                            Comment
-                        </button>
-                    </div>
+                    <form onSubmit={handleAddComment} className="flex-1">
+                        <div className="relative">
+                            <textarea
+                                value={newComment}
+                                onChange={(e) => setNewComment(e.target.value)}
+                                placeholder="Share your thoughts..."
+                                className="w-full bg-[#1a1d21] border border-[var(--border)] text-white rounded-xl p-4 pr-12 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all min-h-[100px] resize-none placeholder-gray-500"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!newComment.trim()}
+                                className="absolute bottom-3 right-3 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                                <Send size={16} />
+                            </button>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                            <label className="flex items-center cursor-pointer relative">
+                                <input
+                                    type="checkbox"
+                                    checked={isAnonymous}
+                                    onChange={(e) => setIsAnonymous(e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                <span className="ml-2 text-xs font-medium text-gray-400">Post anonymously</span>
+                            </label>
+                        </div>
+                        {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
+                    </form>
                 </div>
-            </form>
+            ) : (
+                <div className="bg-[#1a1d21] rounded-xl p-6 text-center mb-8 border border-[var(--border)]">
+                    <p className="text-gray-400 text-sm">Please log in to participate in the discussion.</p>
+                </div>
+            )}
 
-            {/* Comment Tree */}
-            <div className="rounded-xl p-4" style={{ backgroundColor: '#202020' }}>
-                {rootComments.length === 0 ? (
-                    <p className="text-[var(--text-secondary)] text-center py-4">No comments yet.</p>
-                ) : (
-                    rootComments.map((comment) => (
+            {/* Comment List */}
+            {loading ? (
+                <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                </div>
+            ) : comments.length > 0 ? (
+                <div className="space-y-6">
+                    {comments.map(comment => (
                         <CommentItem
                             key={comment._id}
                             comment={comment}
-                            replyingTo={replyingTo}
-                            setReplyingTo={setReplyingTo}
-                            replyContent={replyContent}
-                            setReplyContent={setReplyContent}
-                            isReplyAnonymous={isReplyAnonymous}
-                            setIsReplyAnonymous={setIsReplyAnonymous}
-                            handlePost={handlePost}
-                            loading={loading}
+                            depth={0}
+                            onReply={handleReply}
+                            replies={comment.replies}
+                            getAvatarColor={getAvatarColor}
                         />
-                    ))
-                )}
-            </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-12 text-gray-500">
+                    <MessageSquare size={48} className="mx-auto mb-3 opacity-20" />
+                    <p>No comments yet. Be the first to verify!</p>
+                </div>
+            )}
         </div>
     );
 };

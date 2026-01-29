@@ -9,21 +9,14 @@ const OpinionDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [opinion, setOpinion] = useState(null);
-    const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Parallel fetch for speed
-                const [opinionRes, commentsRes] = await Promise.all([
-                    api.get(`/opinions/${id}`),
-                    api.get(`/comments/${id}`)
-                ]);
-
-                setOpinion(opinionRes.data);
-                setComments(commentsRes.data);
+                const res = await api.get(`/opinions/${id}`);
+                setOpinion(res.data);
                 setLoading(false);
             } catch (err) {
                 console.error("Error fetching details:", err);
@@ -53,11 +46,7 @@ const OpinionDetails = () => {
 
             <OpinionCard item={opinion} onClick={null} expanded={true} />
 
-            <CommentSection
-                opinionId={id}
-                comments={comments}
-                setComments={setComments}
-            />
+            <CommentSection opinionId={id} />
         </div>
     );
 };
