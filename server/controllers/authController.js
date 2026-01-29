@@ -36,7 +36,7 @@ exports.googleLogin = async (req, res) => {
             await user.save();
         }
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
         res.json({ token, user: { id: user._id, username: user.username, email: user.email, picture } });
 
     } catch (err) {
@@ -179,7 +179,7 @@ exports.verifyOtp = async (req, res) => {
         user.isSetupComplete = true; // Mark as verified
         await user.save();
 
-        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
         res.json({ token, user: { id: user._id, username: user.username, email: user.email } });
 
     } catch (err) {
