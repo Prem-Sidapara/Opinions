@@ -191,7 +191,13 @@ const Navbar = () => {
                         {/* Categories Dropdown */}
                         <div className="relative h-full flex items-center" ref={categoryRef}>
                             <button
-                                onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                                onClick={() => {
+                                    if (!isCategoriesOpen && categoryRef.current) {
+                                        const rect = categoryRef.current.getBoundingClientRect();
+                                        setDropdownPos({ top: rect.bottom + 8, left: rect.left });
+                                    }
+                                    setIsCategoriesOpen(!isCategoriesOpen);
+                                }}
                                 className={`flex items-center gap-1 text-sm md:text-lg font-medium transition-colors h-full border-b-2 ${isCategoriesOpen ? 'text-[#FF6B35] border-[#FF6B35]' : 'text-white border-transparent hover:text-[#FF6B35] hover:border-[#FF6B35]'}`}
                             >
                                 Categories
@@ -200,7 +206,11 @@ const Navbar = () => {
 
                             {isCategoriesOpen && (
                                 <div
-                                    className="absolute top-full left-0 mt-2 w-56 bg-[#1a1a1a] border border-[#333] rounded-xl shadow-2xl overflow-hidden py-1 z-[9999]"
+                                    className="fixed w-56 bg-[#1a1a1a] border border-[#333] rounded-xl shadow-2xl overflow-hidden py-1 z-[9999]"
+                                    style={{
+                                        top: `${dropdownPos.top}px`,
+                                        left: `${dropdownPos.left}px`
+                                    }}
                                 >
                                     <button
                                         onClick={() => handleCategoryClick('All')}
