@@ -31,8 +31,3 @@ Desktop.ini
 
 # Testing
 coverage/
-
-# Tools
-
-# Scripts
-scripts/seed_production.js

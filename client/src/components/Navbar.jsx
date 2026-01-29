@@ -45,28 +45,45 @@ const Navbar = () => {
 
 
     const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+    const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const [topics, setTopics] = useState([]);
     const categoryRef = useRef(null);
 
-    // Fetch topics on mount
+    // Close categories dropdown on resize
     useEffect(() => {
-        const fetchTopics = async () => {
-            try {
-                const res = await api.get('/topics');
-                // Deduplicate topics
-                const uniqueTopics = Array.from(new Map(res.data.map(item => [item.name, item])).values());
-                setTopics(uniqueTopics);
-            } catch (err) {
-                console.error("Failed to fetch topics", err);
-                // Fallback
-                setTopics([
-                    { _id: '1', name: 'Technology' },
-                    { _id: '2', name: 'Politics' },
-                    { _id: '3', name: 'Sports' }
-                ]);
-            }
-        };
+        const handleResize = () => setIsCategoriesOpen(false);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    // Fetch topics function
+    const fetchTopics = async () => {
+        try {
+            const res = await api.get('/topics');
+            // Deduplicate topics
+            const uniqueTopics = Array.from(new Map(res.data.map(item => [item.name, item])).values());
+            setTopics(uniqueTopics);
+        } catch (err) {
+            console.error("Failed to fetch topics", err);
+            // Fallback
+            setTopics([
+                { _id: '1', name: 'Technology' },
+                { _id: '2', name: 'Politics' },
+                { _id: '3', name: 'Sports' }
+            ]);
+        }
+    };
+
+    // Fetch topics on mount and listen for updates
+    useEffect(() => {
         fetchTopics();
+
+        const handleOpinionCreated = () => {
+            fetchTopics();
+        };
+
+        window.addEventListener('opinion-created', handleOpinionCreated);
+        return () => window.removeEventListener('opinion-created', handleOpinionCreated);
     }, []);
 
     // Close categories dropdown on outside click
@@ -169,7 +186,13 @@ const Navbar = () => {
                         {/* Categories Dropdown */}
                         <div className="relative h-full flex items-center" ref={categoryRef}>
                             <button
-                                onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                                onClick={() => {
+                                    if (!isCategoriesOpen && categoryRef.current) {
+                                        const rect = categoryRef.current.getBoundingClientRect();
+                                        setDropdownPos({ top: rect.bottom + 8, left: rect.left });
+                                    }
+                                    setIsCategoriesOpen(!isCategoriesOpen);
+                                }}
                                 className={`flex items-center gap-1 text-sm md:text-lg font-medium transition-colors h-full border-b-2 ${isCategoriesOpen ? 'text-[#FF6B35] border-[#FF6B35]' : 'text-white border-transparent hover:text-[#FF6B35] hover:border-[#FF6B35]'}`}
                             >
                                 Categories
@@ -177,7 +200,13 @@ const Navbar = () => {
                             </button>
 
                             {isCategoriesOpen && (
-                                <div className="absolute top-full left-0 mt-2 w-56 bg-[#1a1a1a] border border-[#333] rounded-xl shadow-2xl overflow-hidden py-1 z-50">
+                                <div
+                                    className="fixed w-56 bg-[#1a1a1a] border border-[#333] rounded-xl shadow-2xl overflow-hidden py-1 z-[9999]"
+                                    style={{
+                                        top: `${dropdownPos.top}px`,
+                                        left: `${dropdownPos.left}px`
+                                    }}
+                                >
                                     <button
                                         onClick={() => handleCategoryClick('All')}
                                         className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:text-white hover:bg-[#252525] transition-colors"
